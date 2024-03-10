@@ -1,7 +1,4 @@
 #include "../libs/renderer.h"
-#include <raylib.h>
-#include <stdint.h>
-#include <string.h>
 
 #define FPS_CAP (4999)
 #define PLAYER_HEIGHT (12)
@@ -121,7 +118,36 @@ static const StateSelector enemy_states[] = {
 *  Rectangle frame;
 } Animation; */
 
-static Animation *anims_init(Kind kind) { Animation *animations; }
+static Animation *anims_init(Kind kind) {
+  Animation *animations;
+  switch (kind) {
+  case PLAYER: {
+    int i = 0;
+    animations = malloc(sizeof(player_states) / sizeof(player_states[0]));
+    animations[0] = (Animation){
+        .frame_count = 4,
+        .frame_index = 0,
+        .current_frame = 0,
+        .name = "Walking",
+        .path_to_anim = "./resources/character_run_cycle.png",
+        .frame =
+            (Rectangle){
+
+            },
+    };
+  }
+    return animations;
+  case PARTICLE:
+
+    return;
+  case COLLIDEABLE_OBJ:
+    return;
+  }
+  return NULL;
+}
+
+static void destroy_obj(Object *obj) { free(obj->animations); }
+
 static Object obj_init(Kind kind, Vector2 position, uint16_t size) {
   Object obj = {0};
   switch (kind) {
