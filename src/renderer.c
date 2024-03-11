@@ -28,7 +28,7 @@ typedef struct {
 } Animation;
 
 typedef struct {
-  Animation *const animations;
+  Animation *animations;
   uint16_t current_anim_index;
   uint16_t length;
 } AnimationGroup;
@@ -55,8 +55,8 @@ static Animation player_animations[] = {idle_anim, run_anim, walk_anim,
                                         hit_anim};
 
 static Entity player = (Entity){
-    .size = (Vector2){.x = 5, .y = 5},
-    .position = (Vector2){.x = 0, .y = 0},
+    .size = (Vector2){.x = 5.0, .y = 5.0},
+    .position = (Vector2){.x = 300.0f, .y = 250.0f},
     .anim_group = (AnimationGroup){
         .animations = player_animations,
         .length = sizeof(player_animations) / sizeof(player_animations[0]),
