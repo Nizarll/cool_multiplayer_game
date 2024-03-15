@@ -1,6 +1,9 @@
 #include "../libs/renderer.h"
+#include "../libs/ease.h"
+
+#include <pthread.h>
 #include <raylib.h>
-#include <raymath.h>
+#include <time.h>
 
 #define FPS_CAP (4999)
 #define PLAYER_HEIGHT (12)
@@ -21,7 +24,14 @@
 //         0});
 //   }
 // }
-//
+
+typedef struct {
+  Player *player;
+  bool is_left;
+} Args;
+
+static time_t deltatime = 0;
+
 const Animation walk = (Animation){
     .path = "./resources/character_walk_cycle.png",
     .length = 4,
@@ -35,11 +45,30 @@ static const Animation dodge = (Animation){0};
 static Animation animations[] = {walk};
 
 static bool is_direction_left = false;
+static bool can_flip = true;
+
+int msleep(long msec) {
+  struct timespec ts;
+  int res;
+
+  if (msec < 0) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  ts.tv_sec = msec / 1000;
+  ts.tv_nsec = (msec % 1000) * 1000000;
+
+  do {
+    res = nanosleep(&ts, &ts);
+  } while (res && errno == EINTR);
+
+  return res;
+}
 
 void anim_init(Player *player, Animation *anim) {
   anim->counter = 0;
   anim->texture = LoadTexture(anim->path);
-  // segfaults here
   printf("\n\t animation loaded ID is : %d \n \t", anim->texture.id);
   anim->texture.width *= player->size.x;
   anim->texture.height *= player->size.y;
@@ -75,8 +104,9 @@ void player_adjust_state(State state);
 
 void handle_animations(Player *player) {
   Animation *animation = &(player->animations[player->curr_anim_index]);
-  animation->counter += 1;
-  if (animation->counter >= 60 / .3) {
+  if (animation)
+    animation->counter += 1;
+  if (player->state.kind == S_WALK && animation->counter >= 60 / .3) {
     animation->curr_frame += 1;
     animation->counter = 0;
     if (animation->curr_frame > animation->length - 1)
@@ -88,10 +118,26 @@ void handle_animations(Player *player) {
                  player->color);
 }
 
-void flip(Player *player, bool is_left) {
-  if (is_left)
-    player->animations[player->curr_anim_index].frame.width =
-        -player->animations[player->curr_anim_index].frame.width;
+float lerp(float a, float b, float t) { return (1 - a) + b * t; }
+
+void animate(float *from, float to) {
+  while (*from != to) {
+    *from = ease_inout_back(*from);
+    *from = lerp(*from, to, .5);
+    msleep(50);
+  }
+}
+
+void flip(void *args) {
+  bool is_left = ((Args *)args)->is_left;
+  Player *player = ((Args *)args)->player;
+  if (is_left) {
+    pthread_t t_id;
+    pthread_create(&t_id, NULL, (void *)animate, NULL);
+  }
+
+  //    player->animations[player->curr_anim_index].frame.width =
+  //       -player->animations[player->curr_anim_index].frame.width;
   else
     player->animations[player->curr_anim_index].frame.width =
         fabs(player->animations[player->curr_anim_index].frame.width);
@@ -103,16 +149,31 @@ void renderer_init(const int width, const int height, const char *title) {
 }
 
 void handle_input(Player *player) {
+  if (!IsKeyDown(KEY_D) && !IsKeyDown(KEY_A))
+    player->state = (State){.kind = S_IDLE};
   if (IsKeyDown(KEY_Q)) {
-    if (is_direction_left)
-      flip(player, true);
-    is_direction_left = false;
+    if (!is_direction_left && can_flip) {
+      pthread_t fthread_id;
+      Args *flip_args = malloc(sizeof(Args));
+      flip_args->player = player;
+      flip_args->is_left = is_direction_left = true;
+      pthread_create(&fthread_id, NULL, (void *)flip, flip_args);
+    }
+    player->state = (State){
+        .kind = S_WALK,
+    };
     player->position = Vector2Add(player->position, (Vector2){.x = -.1, 0});
-  }
-  if (IsKeyDown(KEY_D)) {
-    if (!is_direction_left)
-      flip(player, false);
-    is_direction_left = true;
+  } else if (IsKeyDown(KEY_D)) {
+    if (is_direction_left && can_flip) {
+      pthread_t fthread_id;
+      Args *flip_args = malloc(sizeof(Args));
+      flip_args->player = player;
+      flip_args->is_left = is_direction_left = false;
+      pthread_create(&fthread_id, NULL, (void *)flip, flip_args);
+    }
+    player->state = (State){
+        .kind = S_WALK,
+    };
     player->position = Vector2Add(player->position, (Vector2){.x = .1, 0});
   }
 }
@@ -129,6 +190,7 @@ void renderer_render(const int width, const int height, Player *player) {
     ClearBackground(LIGHTGRAY);
     handle_animations(player);
     EndDrawing();
+    deltatime = time(NULL) - deltatime;
   }
   player_deconstruct(player);
   CloseWindow();
