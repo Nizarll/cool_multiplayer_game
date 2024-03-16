@@ -1,2 +1,2 @@
 main: main.c
-	gcc main.c -lraylib src/renderer.c -o renderer
+	gcc main.c -lraylib -lm src/renderer.c src/ease.c -o renderer

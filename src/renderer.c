@@ -8,7 +8,6 @@
 #define FPS_CAP (4999)
 #define PLAYER_HEIGHT (12)
 #define PLAYER_WIDTH (6)
-
 #define OPT(T) (option(T))
 // void handle_movement(Entity *entity) {
 //   if (IsKeyDown(KEY_A)) {
@@ -74,14 +73,15 @@ void anim_init(Player *player, Animation *anim) {
   anim->texture.height *= player->size.y;
   anim->frame.x = 0;
   anim->frame.y = 0;
-  anim->frame.width = (float)anim->texture.width / anim->length;
-  anim->frame.height = anim->texture.height;
+  anim->frame.width = anim->texture.width;
+  anim->frame.height = (float)anim->texture.height / anim->length;
 }
 
 Player *player_init(Vector2 size, Color color) {
   Player *player = malloc(sizeof(Player));
   player->size = size;
   player->color = color;
+  player->rotation = 0;
   player->animations_length = sizeof(animations) / sizeof(animations[0]);
   player->animations = malloc(player->animations_length * sizeof(Animation));
   player->animations = animations;
@@ -104,6 +104,8 @@ void player_adjust_state(State state);
 
 void handle_animations(Player *player) {
   Animation *animation = &(player->animations[player->curr_anim_index]);
+  Vector2 origin = {(float)animation->frame.width / 2,
+                    (float)animation->frame.height / 2};
   if (animation)
     animation->counter += 1;
   if (player->state.kind == S_WALK && animation->counter >= 60 / .3) {
@@ -111,36 +113,56 @@ void handle_animations(Player *player) {
     animation->counter = 0;
     if (animation->curr_frame > animation->length - 1)
       animation->curr_frame = 0;
-    animation->frame.x = (float)animation->curr_frame *
-                         (float)animation->texture.width / animation->length;
+    animation->frame.y = (float)animation->curr_frame *
+                         (float)animation->texture.height / animation->length;
   }
-  DrawTextureRec(animation->texture, animation->frame, player->position,
-                 player->color);
+  DrawTexturePro(animation->texture, animation->frame,
+                 (Rectangle){player->position.x, player->position.y,
+                             animation->frame.width, animation->frame.height},
+                 origin, 0.0f, player->color);
+  // DrawTextureRec(animation->texture, animation->frame, player->position,
+  //               player->color);
 }
 
-float lerp(float a, float b, float t) { return (1 - a) + b * t; }
+float lerp(float a, float b, float t) { return a + t * (b - a); }
 
-void animate(float *from, float to) {
-  while (*from != to) {
-    *from = ease_inout_back(*from);
-    *from = lerp(*from, to, .5);
-    msleep(50);
+void animate(void *args) {
+  bool is_left = ((Args *)args)->is_left;
+  Player *player = ((Args *)args)->player;
+  float text_width, frame_width;
+  can_flip = false;
+  if (is_left) {
+    text_width =
+        -fabs((float)player->animations[player->curr_anim_index].texture.width);
+  } else {
+    text_width =
+        fabs((float)player->animations[player->curr_anim_index].texture.width);
   }
+  frame_width = (float)player->animations[player->curr_anim_index].frame.width;
+  float i = 0;
+  while (i < 1) {
+    i = i < .2 ? i + .0035 : 1;
+    if (i < .11) {
+      player->animations[player->curr_anim_index].frame.width =
+          lerp(player->animations[player->curr_anim_index].frame.width, 0, i);
+    } else {
+      player->animations[player->curr_anim_index].frame.width =
+          lerp(player->animations[player->curr_anim_index].frame.width,
+               frame_width, i);
+    }
+    player->animations[player->curr_anim_index].texture.width =
+        lerp(player->animations[player->curr_anim_index].texture.width,
+             text_width, i);
+    printf("%f\n", i);
+    msleep(5);
+  }
+  can_flip = true;
 }
 
 void flip(void *args) {
-  bool is_left = ((Args *)args)->is_left;
-  Player *player = ((Args *)args)->player;
-  if (is_left) {
-    pthread_t t_id;
-    pthread_create(&t_id, NULL, (void *)animate, NULL);
-  }
-
-  //    player->animations[player->curr_anim_index].frame.width =
-  //       -player->animations[player->curr_anim_index].frame.width;
-  else
-    player->animations[player->curr_anim_index].frame.width =
-        fabs(player->animations[player->curr_anim_index].frame.width);
+  pthread_t t_id;
+  pthread_create(&t_id, NULL, (void *)animate, args);
+  pthread_join(t_id, NULL);
 }
 
 void renderer_init(const int width, const int height, const char *title) {
