@@ -3,31 +3,29 @@
 
 #include <pthread.h>
 #include <raylib.h>
+#include <raymath.h>
+#include <stdio.h>
 #include <time.h>
 
 #define FPS_CAP (4999)
-#define PLAYER_HEIGHT (12)
-#define PLAYER_WIDTH (6)
-#define OPT(T) (option(T))
-// void handle_movement(Entity *entity) {
-//   if (IsKeyDown(KEY_A)) {
-//     entity->position = Vector2Add(
-//         entity->position,
-//         (Vector2){.x = -(float)1 / entity->input_tracker->keys_pressed,
-//                   .y = 0});
-//   }
-//   if (IsKeyDown(KEY_D)) {
-//     entity->position = Vector2Add(
-//         entity->position,
-//         (Vector2){.x = (float)1 / entity->input_tracker->keys_pressed, .y =
-//         0});
-//   }
-// }
 
 typedef struct {
   Player *player;
   bool is_left;
 } Args;
+
+typedef struct {
+  const char *type;
+  union {
+    Player *player;
+    // other types
+  } entity;
+} RigidBody;
+
+typedef struct {
+  RigidBody *rbs;
+  size_t length;
+} RigidBodyArr;
 
 static time_t deltatime = 0;
 
@@ -37,11 +35,20 @@ const Animation walk = (Animation){
     .speed = 1,
 };
 
-static const Animation idle = (Animation){0};
-static const Animation attack = (Animation){0};
-static const Animation dodge = (Animation){0};
+static const Animation idle = (Animation){
+    .path = "./resources/character.png",
+    .length = 1,
+    .speed = 1,
+};
 
-static Animation animations[] = {walk};
+static const Animation attack = (Animation){0};
+static const Animation dash = (Animation){0};
+
+static Animation animations[] = {
+    [S_WALK] = walk, [S_IDLE] = idle,
+    // [S_M1] = walk,
+    // [S_DASH] = walk,
+};
 
 static bool is_direction_left = false;
 static bool can_flip = true;
@@ -49,26 +56,21 @@ static bool can_flip = true;
 int msleep(long msec) {
   struct timespec ts;
   int res;
-
   if (msec < 0) {
     errno = EINVAL;
     return -1;
   }
-
   ts.tv_sec = msec / 1000;
   ts.tv_nsec = (msec % 1000) * 1000000;
-
   do {
     res = nanosleep(&ts, &ts);
   } while (res && errno == EINTR);
-
   return res;
 }
 
 void anim_init(Player *player, Animation *anim) {
   anim->counter = 0;
   anim->texture = LoadTexture(anim->path);
-  printf("\n\t animation loaded ID is : %d \n \t", anim->texture.id);
   anim->texture.width *= player->size.x;
   anim->texture.height *= player->size.y;
   anim->frame.x = 0;
@@ -86,7 +88,9 @@ Player *player_init(Vector2 size, Color color) {
   player->animations = malloc(player->animations_length * sizeof(Animation));
   player->animations = animations;
   player->curr_anim_index = 0;
-  anim_init(player, &animations[0]);
+  for (int i = 0; i < player->animations_length; i++) {
+    anim_init(player, &animations[i]);
+  }
   return player;
 }
 
@@ -100,28 +104,25 @@ void player_deconstruct(Player *player) {
   free(player);
 }
 
-void player_adjust_state(State state);
-
 void handle_animations(Player *player) {
-  Animation *animation = &(player->animations[player->curr_anim_index]);
+  Animation *animation = &(player->animations[player->state.kind]);
   Vector2 origin = {(float)animation->frame.width / 2,
                     (float)animation->frame.height / 2};
-  if (animation)
+  if (animation && player->state.kind == S_WALK) {
     animation->counter += 1;
-  if (player->state.kind == S_WALK && animation->counter >= 60 / .3) {
-    animation->curr_frame += 1;
-    animation->counter = 0;
-    if (animation->curr_frame > animation->length - 1)
-      animation->curr_frame = 0;
-    animation->frame.y = (float)animation->curr_frame *
-                         (float)animation->texture.height / animation->length;
+    if (animation->counter >= 60 / .3) {
+      animation->curr_frame += 1;
+      animation->counter = 0;
+      if (animation->curr_frame > animation->length - 1)
+        animation->curr_frame = 0;
+      animation->frame.y = (float)animation->curr_frame *
+                           (float)animation->texture.height / animation->length;
+    }
   }
   DrawTexturePro(animation->texture, animation->frame,
                  (Rectangle){player->position.x, player->position.y,
                              animation->frame.width, animation->frame.height},
                  origin, 0.0f, player->color);
-  // DrawTextureRec(animation->texture, animation->frame, player->position,
-  //               player->color);
 }
 
 float lerp(float a, float b, float t) { return a + t * (b - a); }
@@ -153,12 +154,11 @@ void animate(void *args) {
     player->animations[player->curr_anim_index].texture.width =
         lerp(player->animations[player->curr_anim_index].texture.width,
              text_width, i);
-    printf("%f\n", i);
     msleep(5);
   }
   can_flip = true;
 }
-
+// summon flip animation in a new thread
 void flip(void *args) {
   pthread_t t_id;
   pthread_create(&t_id, NULL, (void *)animate, args);
@@ -173,6 +173,8 @@ void renderer_init(const int width, const int height, const char *title) {
 void handle_input(Player *player) {
   if (!IsKeyDown(KEY_D) && !IsKeyDown(KEY_A))
     player->state = (State){.kind = S_IDLE};
+  if (IsKeyDown(KEY_SPACE) && player->state.kind != S_JUMP) {
+  }
   if (IsKeyDown(KEY_Q)) {
     if (!is_direction_left && can_flip) {
       pthread_t fthread_id;
@@ -200,20 +202,57 @@ void handle_input(Player *player) {
   }
 }
 
+// void do_physic(void *pp);
+
+void handle_physics(RigidBodyArr *arr) {
+  for (int i = 0; i < arr->length; i++) {
+    RigidBody rb = arr->rbs[i];
+    if (strncmp(rb.type, "player", strlen(rb.type)) == 0) {
+      if (rb.entity.player->position.y >= 400)
+        continue;
+      rb.entity.player->position =
+          Vector2Add(rb.entity.player->position, (Vector2){
+                                                     .x = 0,
+                                                     .y = .1,
+                                                 });
+      //  check for collisions here
+    }
+  }
+}
+
+void physics_deconstruct(RigidBodyArr *arr) {
+  free(arr->rbs);
+  free(arr);
+}
+
 void renderer_render(const int width, const int height, Player *player) {
+
+  // Initialize the array of rigidbody objects although that should be done on
+  // the server lol
+
+  RigidBodyArr *arr = (RigidBodyArr *)malloc(sizeof(RigidBodyArr));
+  RigidBody *rbs = (RigidBody *)malloc(1 * sizeof(RigidBody));
+  arr->length = 1;
+  rbs[0] = (RigidBody){
+      .type = "player",
+      .entity.player = player,
+  };
+  arr->rbs = rbs;
   Animation animation = player->animations[player->curr_anim_index];
   player->position = (Vector2){.x = width / 2.0, .y = height / 2.0};
-  printf("\t\n ID %d\n", animation.texture.id);
-  printf("%d %d %f %f \n", animation.texture.width, animation.texture.height,
-         animation.frame.height, animation.frame.width);
+
   while (!WindowShouldClose()) {
-    BeginDrawing();
+    handle_physics(arr);
     handle_input(player);
+    BeginDrawing();
     ClearBackground(LIGHTGRAY);
+    DrawText(TextFormat("Fps : %03i", GetFPS()), GetScreenWidth() - 150, 20, 20,
+             BLACK);
     handle_animations(player);
     EndDrawing();
     deltatime = time(NULL) - deltatime;
   }
+  physics_deconstruct(arr);
   player_deconstruct(player);
   CloseWindow();
 }

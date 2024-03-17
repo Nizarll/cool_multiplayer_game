@@ -15,6 +15,7 @@
 typedef enum {
   S_WALK,
   S_IDLE,
+  S_JUMP,
   S_M1,
   S_BLOCK,
   S_DASH,
