@@ -1,5 +1,15 @@
 #include "../libs/dynarr.h"
 
+DynArray *da_init(void *items, size_t e_size, size_t length,
+                  size_t occupied_length, size_t step) {
+  DynArray *array = (DynArray *)malloc(sizeof(DynArray));
+  array->e_size = e_size;
+  array->length = length;
+  array->occupied_length = occupied_length;
+  array->step = step;
+  array->items = (void *)malloc(array->e_size * array->length);
+  return array;
+}
 bool da_find(DynArray *array, void *data) {
   if (array->items == NULL)
     return false;
@@ -7,7 +17,7 @@ bool da_find(DynArray *array, void *data) {
     return false;
   for (int i = 0; i < array->occupied_length; i++) {
     if (memcmp(&array->items[i], data, array->e_size) == 0)
-      return true;
+      return i;
   }
   return false;
 }
