@@ -45,7 +45,7 @@ static const Animation attack = (Animation){0};
 static const Animation dash = (Animation){0};
 
 static Animation animations[] = {
-    [S_WALK] = walk, [S_IDLE] = idle,
+    [S_WALK] = walk, [S_IDLE] = idle, [S_JUMP] = idle,
     // [S_M1] = walk,
     // [S_DASH] = walk,
 };
@@ -127,7 +127,7 @@ void handle_animations(Player *player) {
 
 float lerp(float a, float b, float t) { return a + t * (b - a); }
 
-void animate(void *args) {
+void animate_flip(void *args) {
   bool is_left = ((Args *)args)->is_left;
   Player *player = ((Args *)args)->player;
   float text_width, frame_width;
@@ -161,8 +161,25 @@ void animate(void *args) {
 // summon flip animation in a new thread
 void flip(void *args) {
   pthread_t t_id;
-  pthread_create(&t_id, NULL, (void *)animate, args);
+  pthread_create(&t_id, NULL, (void *)animate_flip, args);
   pthread_join(t_id, NULL);
+}
+
+void animate_jump(void *args) {
+  Player *player = (Player *)args;
+  for (int i = 0; i < 10; i++) {
+    printf("hi\n");
+    player->position = Vector2Add(player->position, (Vector2){
+                                                        .x = 0,
+                                                        .y = -10,
+                                                    });
+    msleep(10);
+  }
+}
+
+void jump(Player *player) {
+  pthread_t t_id;
+  pthread_create(&t_id, NULL, (void *)animate_jump, player);
 }
 
 void renderer_init(const int width, const int height, const char *title) {
@@ -171,10 +188,8 @@ void renderer_init(const int width, const int height, const char *title) {
 }
 
 void handle_input(Player *player) {
-  if (!IsKeyDown(KEY_D) && !IsKeyDown(KEY_A))
+  if (!IsKeyDown(KEY_D) && !IsKeyDown(KEY_A) && player->state.kind != S_JUMP)
     player->state = (State){.kind = S_IDLE};
-  if (IsKeyDown(KEY_SPACE) && player->state.kind != S_JUMP) {
-  }
   if (IsKeyDown(KEY_Q)) {
     if (!is_direction_left && can_flip) {
       pthread_t fthread_id;
@@ -199,6 +214,10 @@ void handle_input(Player *player) {
         .kind = S_WALK,
     };
     player->position = Vector2Add(player->position, (Vector2){.x = .1, 0});
+  }
+  if (IsKeyDown(KEY_SPACE) && player->state.kind != S_JUMP) {
+    player->state = (State){.kind = S_JUMP};
+    jump(player);
   }
 }
 

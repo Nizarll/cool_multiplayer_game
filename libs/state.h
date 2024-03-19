@@ -1,12 +1,12 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include <stdbool.h>
-
+#include "dynarr.h"
 #include <errno.h>
 #include <pthread.h>
 #include <raylib.h>
 #include <raymath.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +46,7 @@ typedef struct Player {
   uint8_t rotation;
   Vector2 position;
   Vector2 size;
-  State state;
+  State *states;
   //
   Animation *animations;
   size_t animations_length;
