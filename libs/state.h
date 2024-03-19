@@ -46,14 +46,14 @@ typedef struct Player {
   uint8_t rotation;
   Vector2 position;
   Vector2 size;
-  State *states;
+  DynArray *states;
   //
   Animation *animations;
   size_t animations_length;
   size_t curr_anim_index;
 } Player;
 
-bool has_state(Player *player);
+bool has_state(Player *player, StateKind kind);
 bool handle_state(Player *player);
 
 #endif // STATE_H

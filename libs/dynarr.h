@@ -1,6 +1,7 @@
 #ifndef DYNARR_H
 #define DYNARR_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,7 @@ typedef struct {
   size_t step;
 } DynArray;
 
+bool da_find(DynArray *array, void *data);
 void da_append(DynArray *array, void *data);
 void da_remove(DynArray *array, void *data);
 void da_free(DynArray *array);

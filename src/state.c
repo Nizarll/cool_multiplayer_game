@@ -1,8 +1,17 @@
 #include "../libs/state.h"
 
-bool has_state(Player *player) {
+#define UNIMPLEMENTED
+bool has_state(Player *player, StateKind kind) {
   if (!player->states)
     return false;
-  // if (!player->states.length)
+  for (int i = 0; i < player->states->occupied_length; i++) {
+    if (((State *)player->states)[i].kind == kind)
+      return true;
+  }
+  return false;
 }
-bool handle_state(Player *player) {}
+bool handle_state(Player *player) {
+  // add state machine lulz
+  UNIMPLEMENTED
+  return false;
+}
