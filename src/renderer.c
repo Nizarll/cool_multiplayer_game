@@ -235,6 +235,7 @@ void handle_physics(DynArray *arr) {
 void renderer_render(const int width, const int height, Player *player) {
   DynArray *players = (DynArray *)da_init(sizeof(Player *));
   da_append(players, player);
+  printf("\t\n%d \t\n", players->occupied_length);
   player->position = (Vector2){.x = width / 2.0f, .y = height / 2.0f};
   while (!WindowShouldClose()) {
     handle_physics(players);
