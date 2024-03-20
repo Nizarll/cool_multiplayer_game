@@ -2,7 +2,7 @@
 #define STATE_H
 
 #include "dynarr.h"
-#include "player.h"
+#include "entity.h"
 #include <errno.h>
 #include <pthread.h>
 #include <raylib.h>
@@ -17,6 +17,7 @@
 
 typedef enum {
   eWALK,
+  eIDLE,
   eJUMP,
   eCROUCH,
   eATTACK,
@@ -33,6 +34,7 @@ typedef struct {
 } State;
 
 bool has_state(Player *player, StateKind kind);
-bool handle_state(Player *player);
+bool can_transition_state(Player *player, StateKind kind);
+void handle_state(Player *player);
 
 #endif // STATE_H

@@ -10,6 +10,7 @@ DynArray *da_init(void *items, size_t e_size, size_t length,
   array->items = (void *)malloc(array->e_size * array->length);
   return array;
 }
+
 bool da_find(DynArray *array, void *data) {
   if (array->items == NULL)
     return false;

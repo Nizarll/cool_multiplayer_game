@@ -6,6 +6,29 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+typedef enum {
+  eWALK,
+  eIDLE,
+  eJUMP,
+  eCROUCH,
+  eATTACK,
+  eDASH,
+  ePARRY,
+  eDAMAGED,
+  ePARRIED,
+  eSTUNNED,
+} StateKind;
+
+typedef struct {
+  StateKind kind;
+  void *data;
+} State;
+
+typedef struct RigidBody {
+  Vector2 *hitbox;
+  DynArray *forces;
+} RigidBody;
+
 typedef struct Animation {
   const char *path;
   Texture2D texture;
@@ -23,18 +46,18 @@ typedef struct Player {
   Vector2 position;
   Vector2 size;
   DynArray *states;
+  RigidBody *rb;
   //
   Animation *animations;
   size_t animations_length;
   size_t curr_anim_index;
 } Player;
 
-typedef struct RigidBody {
-  Vector2 *hitbox;
-  DynArray *forces;
-} RigidBody;
-
 RigidBody *rb_init();
-RigidBody *rb_get_from_player(Player *player);
+void rb_addforce(RigidBody *rb, Vector2 force);
 void rb_handle_forces(RigidBody *rb);
+bool has_state(Player *player, StateKind kind);
+bool can_transition_state(Player *player, StateKind kind);
+void add_state(Player *player);
+void handle_state(Player *player);
 #endif // PLAYER_H

@@ -1,4 +1,7 @@
 #include "../libs/state.h"
+#include "../libs/entity.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #define UNIMPLEMENTED                                                          \
   do {                                                                         \
@@ -18,26 +21,50 @@ bool has_state(Player *player, StateKind kind) {
 
 // I KNOW O(N ^ ONE BILLION) is bad but whatever man im just making a 2d game
 // TODO : switch to hashtable
+//
+bool can_transition_state(Player *player, StateKind kind) {
+  switch (kind) {
+  case eWALK:
+    return (!has_state(player, eWALK) &&
+            !(has_state(player, ePARRY) || has_state(player, eDAMAGED) ||
+              has_state(player, ePARRIED) || has_state(player, eSTUNNED)));
+  case eJUMP:
+    return (!has_state(player, eJUMP) &&
+            !(has_state(player, ePARRY) || has_state(player, eDAMAGED) ||
+              has_state(player, ePARRIED) || has_state(player, eSTUNNED)));
+  case ePARRY:
+    return (!has_state(player, eJUMP) && !has_state(player, eWALK) &&
+            !(has_state(player, ePARRY) || has_state(player, eDAMAGED) ||
+              has_state(player, ePARRIED) || has_state(player, eSTUNNED)));
+  case eDASH:
+    return (has_state(player, eWALK) &&
+            !(has_state(player, ePARRY) || has_state(player, eDAMAGED) ||
+              has_state(player, ePARRIED) || has_state(player, eSTUNNED)));
+  default:
+    fprintf(stderr, "\tERROR: INVALID STATE TRANSITION !\t\n");
+    exit(EXIT_FAILURE);
+  }
+  return false;
+}
 
-bool handle_state(Player *player) {
-  // RigidBody rb = get_rigid_body(player);
-  UNIMPLEMENTED;
+void handle_state(Player *player) {
+  RigidBody *rb = player->rb;
+  if (rb == NULL)
+    return;
   if (has_state(player, eWALK) &&
       !(has_state(player, ePARRY) || has_state(player, eDAMAGED) ||
         has_state(player, ePARRIED) || has_state(player, eSTUNNED))) {
-    // add_force(rb, (Vector2){.x = 10, .y = 0});
-    //  do walk
+    rb_addforce(player->rb, (Vector2){.x = .1, .y = 0});
   }
   if (has_state(player, eJUMP) &&
       !(has_state(player, ePARRY) || has_state(player, eDAMAGED) ||
         has_state(player, ePARRIED) || has_state(player, eSTUNNED))) {
-    // add_force(rb, (Vector2){.x = 10, .y = 0});
-    //  do jump
+    rb_addforce(player->rb, (Vector2){.x = 0, .y = .1});
   }
   if (has_state(player, eDASH) &&
       !(has_state(player, ePARRY) || has_state(player, eDAMAGED) ||
         has_state(player, ePARRIED) || has_state(player, eSTUNNED))) {
+    rb_addforce(player->rb, (Vector2){.x = 2, .y = 0});
     // do dash
   }
-  return false;
 }

@@ -1,7 +1,7 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "./state.h"
+#include "./entity.h"
 
 Player *player_init(Vector2 size, Color color);
 void renderer_init(const int width, const int height, const char *title);

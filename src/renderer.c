@@ -9,18 +9,15 @@
 
 #define FPS_CAP (4999)
 
+typedef enum {
+  eLEFT,
+  eRIGHT,
+} Direction;
+
 typedef struct {
   Player *player;
   bool is_left;
 } Args;
-
-typedef struct {
-  const char *type;
-  union {
-    Player *player;
-    // other types
-  } entity;
-} RigidBody;
 
 typedef struct {
   RigidBody *rbs;
@@ -45,7 +42,7 @@ static const Animation attack = (Animation){0};
 static const Animation dash = (Animation){0};
 
 static Animation animations[] = {
-    [S_WALK] = walk, [S_IDLE] = idle, [S_JUMP] = idle,
+    [eWALK] = walk, [eIDLE] = idle, [eJUMP] = idle,
     // [S_M1] = walk,
     // [S_DASH] = walk,
 };
@@ -99,16 +96,15 @@ void player_deconstruct(Player *player) {
     free((void *)player->animations[i].path);
   }
   free(player->animations);
-  if (player->state.extra_data)
-    free(player->state.extra_data);
+  da_free(player->states);
   free(player);
 }
 
 void handle_animations(Player *player) {
-  Animation *animation = &(player->animations[player->state.kind]);
+  Animation *animation = &(player->animations[has_state(player, eWALK) || 0]);
   Vector2 origin = {(float)animation->frame.width / 2,
                     (float)animation->frame.height / 2};
-  if (animation && player->state.kind == S_WALK) {
+  if (animation && has_state(player, eWALK)) {
     animation->counter += 1;
     if (animation->counter >= 60 / .3) {
       animation->curr_frame += 1;
@@ -188,56 +184,39 @@ void renderer_init(const int width, const int height, const char *title) {
 }
 
 void handle_input(Player *player) {
-  if (!IsKeyDown(KEY_D) && !IsKeyDown(KEY_A) && player->state.kind != S_JUMP)
-    player->state = (State){.kind = S_IDLE};
-  if (IsKeyDown(KEY_Q)) {
-    if (!is_direction_left && can_flip) {
-      pthread_t fthread_id;
-      Args *flip_args = malloc(sizeof(Args));
-      flip_args->player = player;
-      flip_args->is_left = is_direction_left = true;
-      pthread_create(&fthread_id, NULL, (void *)flip, flip_args);
-    }
-    player->state = (State){
-        .kind = S_WALK,
-    };
-    player->position = Vector2Add(player->position, (Vector2){.x = -.1, 0});
-  } else if (IsKeyDown(KEY_D)) {
-    if (is_direction_left && can_flip) {
-      pthread_t fthread_id;
-      Args *flip_args = malloc(sizeof(Args));
-      flip_args->player = player;
-      flip_args->is_left = is_direction_left = false;
-      pthread_create(&fthread_id, NULL, (void *)flip, flip_args);
-    }
-    player->state = (State){
-        .kind = S_WALK,
-    };
-    player->position = Vector2Add(player->position, (Vector2){.x = .1, 0});
+  if ((IsKeyDown(KEY_A) || IsKeyDown(KEY_D)) &&
+      can_transition_state(player, eWALK)) {
+    int *direction;
+    *direction = IsKeyDown(KEY_A) ? eLEFT : eRIGHT;
+    da_append(player->states, &(State){
+                                  .kind = eWALK,
+                                  .data = (void *)direction,
+                              });
   }
-  if (IsKeyDown(KEY_SPACE) && player->state.kind != S_JUMP) {
-    player->state = (State){.kind = S_JUMP};
-    jump(player);
+  if ((IsKeyDown(KEY_SPACE) && can_transition_state(player, eJUMP))) {
+    da_append(player->states, &(State){
+                                  .kind = eJUMP,
+                              });
   }
 }
 
 // void do_physic(void *pp);
 
-void handle_physics(RigidBodyArr *arr) {
-  for (int i = 0; i < arr->length; i++) {
-    RigidBody rb = arr->rbs[i];
-    if (strncmp(rb.type, "player", strlen(rb.type)) == 0) {
-      if (rb.entity.player->position.y >= 400)
-        continue;
-      rb.entity.player->position =
-          Vector2Add(rb.entity.player->position, (Vector2){
-                                                     .x = 0,
-                                                     .y = .1,
-                                                 });
-      //  check for collisions here
-    }
-  }
-}
+// void handle_physics(RigidBodyArr *arr) {
+//   for (int i = 0; i < arr->length; i++) {
+//     RigidBody rb = arr->rbs[i];
+//     if (strncmp(rb.type, "player", strlen(rb.type)) == 0) {
+//       if (rb.entity.player->position.y >= 400)
+//         continue;
+//       rb.entity.player->position =
+//           Vector2Add(rb.entity.player->position, (Vector2){
+//                                                      .x = 0,
+//                                                      .y = .1,
+//                                                  });
+//       //  check for collisions here
+//     }
+//   }
+// }
 
 void physics_deconstruct(RigidBodyArr *arr) {
   free(arr->rbs);

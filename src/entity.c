@@ -9,10 +9,25 @@ RigidBody *rb_init() {
   rb->hitbox = NULL;
   return rb;
 }
-void rb_handle_forces(RigidBody *rb) {
-  // compute rigidbody forces
-  /*
-   *
-   *
-   */
+
+void rb_addforce(RigidBody *rb, Vector2 force) {
+  if (rb == NULL)
+    return;
+  if (rb->forces == NULL)
+    return;
+  da_append(rb->forces, &(Vector2){
+                            .x = force.x,
+                            .y = force.y,
+                        });
 }
+
+// void add_state(Player *player, State state) {
+//   if (rb == NULL)
+//     return;
+//   if (rb->forces == NULL)
+//     return;
+//   da_append(rb->forces, &(Vector2){
+//                             .x = force.x,
+//                             .y = force.y,
+//                         });
+// }
