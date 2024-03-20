@@ -19,11 +19,6 @@ typedef struct {
   bool is_left;
 } Args;
 
-typedef struct {
-  RigidBody *rbs;
-  size_t length;
-} RigidBodyArr;
-
 static time_t deltatime = 0;
 
 const Animation walk = (Animation){
@@ -76,14 +71,40 @@ void anim_init(Player *player, Animation *anim) {
   anim->frame.height = (float)anim->texture.height / anim->length;
 }
 
+// typedef struct Player {
+//   Color color;
+//   uint8_t rotation;
+//   Vector2 position;
+//   Vector2 size;
+//   DynArray *states;
+//   RigidBody *rb;
+//   //
+//   Animation *animations;
+//   size_t animations_length;
+//   size_t curr_anim_index;
+// } Player;
+
+// typedef struct RigidBody {
+//   Vector2 *hitbox;
+//   DynArray *forces;
+// } RigidBody;
+
 Player *player_init(Vector2 size, Color color) {
-  Player *player = malloc(sizeof(Player));
+  Player *player = (Player *)malloc(sizeof(Player));
+  RigidBody *rb = (RigidBody *)malloc(sizeof(RigidBody));
+  DynArray *forces = (DynArray *)da_init(sizeof(Vector2));
+  DynArray *states = (DynArray *)da_init(sizeof(State));
+  printf("\t\tINFO: %d %d", forces->occupied_length, states->occupied_length);
+  rb->forces = forces;
+  player->rb = rb;
+  player->states = states;
   player->size = size;
   player->color = color;
   player->rotation = 0;
   player->animations_length = sizeof(animations) / sizeof(animations[0]);
-  player->animations = malloc(player->animations_length * sizeof(Animation));
-  player->animations = animations;
+  player->animations =
+      (Animation *)malloc(player->animations_length * sizeof(Animation));
+  player->animations = (Animation *)animations;
   player->curr_anim_index = 0;
   for (int i = 0; i < player->animations_length; i++) {
     anim_init(player, &animations[i]);
@@ -123,7 +144,7 @@ void handle_animations(Player *player) {
 
 float lerp(float a, float b, float t) { return a + t * (b - a); }
 
-void animate_flip(void *args) {
+void *animate_flip(void *args) {
   bool is_left = ((Args *)args)->is_left;
   Player *player = ((Args *)args)->player;
   float text_width, frame_width;
@@ -153,29 +174,23 @@ void animate_flip(void *args) {
     msleep(5);
   }
   can_flip = true;
+  pthread_exit(NULL);
 }
 // summon flip animation in a new thread
 void flip(void *args) {
   pthread_t t_id;
-  pthread_create(&t_id, NULL, (void *)animate_flip, args);
+  pthread_create(&t_id, NULL, animate_flip, args);
   pthread_join(t_id, NULL);
 }
 
-void animate_jump(void *args) {
-  Player *player = (Player *)args;
-  for (int i = 0; i < 10; i++) {
-    printf("hi\n");
-    player->position = Vector2Add(player->position, (Vector2){
-                                                        .x = 0,
-                                                        .y = -10,
-                                                    });
-    msleep(10);
-  }
+void *animate_jump(void *args) {
+  // Player *player = (Player *)args;
+  pthread_exit(NULL);
 }
 
 void jump(Player *player) {
   pthread_t t_id;
-  pthread_create(&t_id, NULL, (void *)animate_jump, player);
+  pthread_create(&t_id, NULL, animate_jump, player);
 }
 
 void renderer_init(const int width, const int height, const char *title) {
@@ -188,59 +203,41 @@ void handle_input(Player *player) {
       can_transition_state(player, eWALK)) {
     int *direction;
     *direction = IsKeyDown(KEY_A) ? eLEFT : eRIGHT;
-    da_append(player->states, &(State){
-                                  .kind = eWALK,
-                                  .data = (void *)direction,
-                              });
+    // da_append(player->states, &(State){
+    //                               .kind = eWALK,
+    //                               .data = (void *)direction,
+    //                           });
   }
   if ((IsKeyDown(KEY_SPACE) && can_transition_state(player, eJUMP))) {
-    da_append(player->states, &(State){
-                                  .kind = eJUMP,
-                              });
+    // da_append(player->states, &(State){
+    //                               .kind = eJUMP,
+    //                           });
   }
 }
 
-// void do_physic(void *pp);
+void handle_physics(DynArray *arr) {
+  printf("%d", arr->occupied_length);
+  for (int i = 0; i < arr->occupied_length; i++) {
+    Player player = *((Player **)arr->items)[i];
+    puts("\n\tINFO: 221");
+    printf("\n\n\t%d", player.rb->forces->occupied_length);
 
-// void handle_physics(RigidBodyArr *arr) {
-//   for (int i = 0; i < arr->length; i++) {
-//     RigidBody rb = arr->rbs[i];
-//     if (strncmp(rb.type, "player", strlen(rb.type)) == 0) {
-//       if (rb.entity.player->position.y >= 400)
-//         continue;
-//       rb.entity.player->position =
-//           Vector2Add(rb.entity.player->position, (Vector2){
-//                                                      .x = 0,
-//                                                      .y = .1,
-//                                                  });
-//       //  check for collisions here
-//     }
-//   }
-// }
-
-void physics_deconstruct(RigidBodyArr *arr) {
-  free(arr->rbs);
-  free(arr);
+    //  for (int y = 0; y < arr->occupied_length; y++) {
+    //    player->position = (Vector2){
+    //        .x = player->position.x + ((Vector2
+    //        *)player->rb->forces->items)[y].x, .y = player->position.y +
+    //        ((Vector2 *)player->rb->forces->items)[y].y,
+    //    };
+    // }
+  }
 }
 
 void renderer_render(const int width, const int height, Player *player) {
-
-  // Initialize the array of rigidbody objects although that should be done on
-  // the server lol
-
-  RigidBodyArr *arr = (RigidBodyArr *)malloc(sizeof(RigidBodyArr));
-  RigidBody *rbs = (RigidBody *)malloc(1 * sizeof(RigidBody));
-  arr->length = 1;
-  rbs[0] = (RigidBody){
-      .type = "player",
-      .entity.player = player,
-  };
-  arr->rbs = rbs;
-  Animation animation = player->animations[player->curr_anim_index];
-  player->position = (Vector2){.x = width / 2.0, .y = height / 2.0};
-
+  DynArray *players = (DynArray *)da_init(sizeof(Player *));
+  da_append(players, player);
+  player->position = (Vector2){.x = width / 2.0f, .y = height / 2.0f};
   while (!WindowShouldClose()) {
-    handle_physics(arr);
+    handle_physics(players);
     handle_input(player);
     BeginDrawing();
     ClearBackground(LIGHTGRAY);
@@ -250,7 +247,7 @@ void renderer_render(const int width, const int height, Player *player) {
     EndDrawing();
     deltatime = time(NULL) - deltatime;
   }
-  physics_deconstruct(arr);
+  da_free(players);
   player_deconstruct(player);
   CloseWindow();
 }
