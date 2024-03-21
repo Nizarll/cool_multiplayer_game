@@ -14,10 +14,15 @@ DynArray *da_init(uint16_t e_size, void *items, uint16_t occupied_length,
   DynArray *array =
       (DynArray *)malloc(sizeof(DynArray) + (step + occupied_length) * e_size);
   array->occupied_length = occupied_length;
+  array->e_size = e_size;
+  array->occupied_length = occupied_length;
   array->step = step;
+  array->items = malloc((step + occupied_length) * e_size);
   if (items == NULL) {
+    puts("item is null");
     memset(array->items, 0, step * e_size);
   } else {
+    puts("item is not null");
     memset(array->items, 0, (occupied_length + step) * e_size);
     memcpy(array->items, items, occupied_length * e_size);
   }
@@ -41,7 +46,7 @@ void da_append(DynArray *array, void *data) {
   if (array->occupied_length == array->step) {
     size_t new_size = (array->occupied_length + array->step) * array->e_size;
     array->items = (void *)realloc(array->items, new_size);
-    if (array->items) {
+    if (array->items == NULL) {
       printf("BUY MORE RAM!\n");
       exit(EXIT_FAILURE);
     }

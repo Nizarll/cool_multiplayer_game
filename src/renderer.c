@@ -199,47 +199,58 @@ void renderer_init(const int width, const int height, const char *title) {
 }
 
 void handle_input(Player *player) {
+  printf("hi\n");
+  // if (!IsKeyDown(KEY_A) && !IsKeyDown(KEY_B)) {
+  //   int index;
+  //   if (index = has_state(player, eWALK)) {
+  //     da_remove(player->states, &((State *)player->states->items)[index]);
+  //   }
+  // }
   if ((IsKeyDown(KEY_A) || IsKeyDown(KEY_D)) &&
       can_transition_state(player, eWALK)) {
     int *direction;
     *direction = IsKeyDown(KEY_A) ? eLEFT : eRIGHT;
-    // da_append(player->states, &(State){
-    //                               .kind = eWALK,
-    //                               .data = (void *)direction,
-    //                           });
-  }
-  if ((IsKeyDown(KEY_SPACE) && can_transition_state(player, eJUMP))) {
-    // da_append(player->states, &(State){
-    //                               .kind = eJUMP,
-    //                           });
+    State *state = (State *)malloc(sizeof(State));
+    state->kind = eWALK;
+    state->data = direction;
+    da_append(player->states, state);
   }
 }
 
 void handle_physics(DynArray *arr) {
   printf("%d", arr->occupied_length);
   for (int i = 0; i < arr->occupied_length; i++) {
-    Player player = *((Player **)arr->items)[i];
+    Player *player = &((Player *)arr->items)[i];
     puts("\n\tINFO: 221");
-    printf("\n\n\t%d", player.rb->forces->occupied_length);
-
-    //  for (int y = 0; y < arr->occupied_length; y++) {
-    //    player->position = (Vector2){
-    //        .x = player->position.x + ((Vector2
-    //        *)player->rb->forces->items)[y].x, .y = player->position.y +
-    //        ((Vector2 *)player->rb->forces->items)[y].y,
-    //    };
-    // }
+    printf("\n\n\t%d", player->rb->forces->occupied_length);
+    if (has_state(player, eWALK)) {
+      printf("has state");
+      player->position = (Vector2){
+          .x = player->position.x + .1,
+          .y = player->position.y,
+      };
+    }
+    //    for (int y = 0; y < arr->occupied_length; y++) {
+    //      printf("%f %f", ((Vector2 *)player->rb->forces->items)[y].x,
+    //             ((Vector2 *)player->rb->forces->items)[y].y);
+    //      player->position = (Vector2){
+    //          .x = player->position.x + ((Vector2
+    //          *)player->rb->forces->items)[y].x, .y = player->position.y +
+    //          ((Vector2 *)player->rb->forces->items)[y].y,
+    //      };
+    //    }
   }
 }
 
 void renderer_render(const int width, const int height, Player *player) {
-  DynArray *players = (DynArray *)da_init(sizeof(Player *));
+  DynArray *players = (DynArray *)da_init(sizeof(Player));
   da_append(players, player);
   printf("\t\n%d \t\n", players->occupied_length);
   player->position = (Vector2){.x = width / 2.0f, .y = height / 2.0f};
   while (!WindowShouldClose()) {
-    handle_physics(players);
     handle_input(player);
+    // handle_state(player);
+    handle_physics(players);
     BeginDrawing();
     ClearBackground(LIGHTGRAY);
     DrawText(TextFormat("Fps : %03i", GetFPS()), GetScreenWidth() - 150, 20, 20,

@@ -21,6 +21,10 @@ void rb_addforce(RigidBody *rb, Vector2 force) {
     return;
   if (rb->forces == NULL)
     return;
+  Vector2 *f = (Vector2 *)malloc(sizeof(Vector2));
+  f->x = force.x;
+  f->y = force.y;
+  da_append(rb->forces, f);
 }
 
 bool has_state(Player *player, StateKind kind) {
