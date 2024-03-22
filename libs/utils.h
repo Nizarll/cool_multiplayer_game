@@ -24,7 +24,7 @@
 #define warn(msg, ...)                                                         \
   printf(ANSI_COLOR_YELLOW "[!] | " msg ANSI_COLOR_RESET "\n", ##__VA_ARGS__)
 
-struct Server {
+typedef struct Server {
   int sockfd;
   int domain;
   int backlog;
@@ -33,13 +33,13 @@ struct Server {
   int port;
   struct sockaddr_in address;
   void (*handle_client)(void **);
-};
+} Server;
 
-struct Client {
+typedef struct Client {
   int sockfd;
   struct sockaddr_in addr;
   socklen_t socklen;
-};
+} Client;
 
 extern struct Bintree *router_tree;
 struct Client client_init(struct Server *server);

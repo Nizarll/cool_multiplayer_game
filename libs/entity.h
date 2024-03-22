@@ -45,7 +45,7 @@ typedef struct Player {
   uint8_t rotation;
   Vector2 position;
   Vector2 size;
-  DynArray *states;
+  State state;
   RigidBody *rb;
   //
   Animation *animations;
