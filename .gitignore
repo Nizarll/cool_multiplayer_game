@@ -1,0 +1,5 @@
+*.o
+*/*.o
+my_game.exe
+*.exe
+*/*.exe

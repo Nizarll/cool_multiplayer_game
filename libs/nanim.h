@@ -2,14 +2,12 @@
 #define NANIM_H
 
 #ifndef MAX_VTABLE_IMPL
-#define MAX_VTABLE_IMPL 10
+constexpr auto MAX_VTABLE_IMPL = 10;
 #endif
 
 #include <stdio.h>
 #include <raylib.h>
-
-#define NANIM_TYPE
-#define NANIM_UIOBJ
+#include <stdint.h>
 
 /*
  * Virtual tables allow us to implement
@@ -18,15 +16,37 @@
  * functions
  */
 
+typedef enum : int8_t {
+	eLINEAR = 0,
+	eINOUT_CIRC,
+	eINOUT_CUBIC,
+	eINOUT_EXP,
+	eINOUT_BACK,
+	EASE_ENUM_LEN
+} EasingStyle;
+
 /***********************************/
 
-NANIM_TYPE typedef struct {
-	Keyframe *keyframes;
+/* ANIMATION LIBRARY IMPLEMENTATION IN C */
+
+typedef struct {
+	Vector2 from;
+	Vector2 to;
+	size_t duration;
+} Keyframe;
+
+typedef struct {
+	Keyframe* keyframes;
+	Vector2 current;
 	EasingStyle style;
-	size_t i;
+	float duration;
+	size_t kf_count;
+	size_t index;
+	bool looped;
+	bool paused;
 } Animation;
 
-NANIM_UIOBJ typedef struct {
+typedef struct {
 	void (*vtable[MAX_VTABLE_IMPL])();
 	Vector2 pos;
 	Vector2 size;
@@ -34,37 +54,31 @@ NANIM_UIOBJ typedef struct {
 	size_t roundness;
 }NButton;
 
-NANIM_UIOBJ typedef struct {
+typedef struct {
 	void (*vtable[MAX_VTABLE_IMPL])();
 	Vector2 pos;
 	Vector2 size;
 	//Image imp
 }NImgButton;
 
-NANIM_UIOBJ typedef struct {
+typedef struct {
 	void (*vtable[MAX_VTABLE_IMPL])();
 	Vector2 pos;
 	Vector2 size;
 	Color color;
 }NRect;
 
-NANIM_UIOBJ typedef struct {
+typedef struct {
 	void (*vtable[MAX_VTABLE_IMPL])();
 	Vector2 pos;
 	size_t radius;
 	Color color;
 }NCircle;
 
-NANIM_TYPE typedef struct {
-	Vector2 from;
-	Vector2 to;
-	size_t duration;
-} Keyframe;
-
 /***********************************/
+
+void update_animation(Animation* anim);
 void play_animation(Animation* anim);
 void pause_animation(Animation* anim);
-
-#undef NANIM_TYPE
 
 #endif
