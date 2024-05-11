@@ -50,10 +50,10 @@ Animation* animation_create(EasingStyle style,
 	if (pool) {
 		anim = mempool_alloc(pool, sizeof(Animation));
 	} else {
-		anim = malloc(pool, sizeof(Animation));
+		anim = malloc(sizeof(Animation));
 	}
 	if (!anim) {
-		printf("error! : could not create animation object");
+		printf("error! : could not create animation object" "\n");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -63,15 +63,18 @@ Animation* animation_create(EasingStyle style,
 	anim->index = 0;
 	anim->duration = .0f;
 	anim->_internal = true;
-	anim->current = {};
+	anim->current = (Vector2){};
 	anim->looped = looped;
-	ani->paused = false;
+	anim->paused = false;
 
 	return anim;
 }
 
 void animation_update(Animation* anim) {
-	ASSERT(anim->_internal, "animation must be created through constructor");
+	if(!anim->_internal) {
+		printf("error! : animation must be created through constructor" "\n");
+		exit(EXIT_FAILURE);
+	}
 	if (anim->paused) return;
 	if (anim->index >= anim->kf_count && anim->looped) {
 		anim->index = 0;
