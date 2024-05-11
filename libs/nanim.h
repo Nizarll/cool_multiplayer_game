@@ -5,7 +5,10 @@
 constexpr auto MAX_VTABLE_IMPL = 10;
 #endif
 
+#include "utils.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <raylib.h>
 #include <stdint.h>
 
@@ -15,6 +18,15 @@ constexpr auto MAX_VTABLE_IMPL = 10;
  * its own implementation of the render and destroy
  * functions
  */
+
+constexpr char error[] = "[x] ERROR ! :";
+
+#define NANIM_ASSERT(x, msg) do {  \
+	if ((!x)) { 								      \
+		printf(error msg);				  		 \
+		exit(EXIT_FAILURE);				     	  \
+	}																		 \
+}while(0)
 
 typedef enum : int8_t {
 	eLINEAR = 0,
@@ -28,6 +40,16 @@ typedef enum : int8_t {
 /***********************************/
 
 /* ANIMATION LIBRARY IMPLEMENTATION IN C */
+
+typedef struct {
+	void* data;
+	size_t size;
+} RenderItem;
+
+typedef struct {
+	RenderItem* items;
+	size_t size;
+}RenderBuffer;
 
 typedef struct {
 	Vector2 from;
@@ -44,41 +66,25 @@ typedef struct {
 	size_t index;
 	bool looped;
 	bool paused;
+	bool _internal;
 } Animation;
 
 typedef struct {
-	void (*vtable[MAX_VTABLE_IMPL])();
-	Vector2 pos;
-	Vector2 size;
 	Color color;
-	size_t roundness;
-}NButton;
-
-typedef struct {
-	void (*vtable[MAX_VTABLE_IMPL])();
-	Vector2 pos;
-	Vector2 size;
-	//Image imp
-}NImgButton;
-
-typedef struct {
-	void (*vtable[MAX_VTABLE_IMPL])();
-	Vector2 pos;
-	Vector2 size;
-	Color color;
-}NRect;
-
-typedef struct {
-	void (*vtable[MAX_VTABLE_IMPL])();
-	Vector2 pos;
-	size_t radius;
-	Color color;
-}NCircle;
+	bool clicked;
+}Button;
 
 /***********************************/
+Animation *animation_create(EasingStyle style,
+		bool loop,
+		Keyframe* keyframes,
+		size_t keyframes_len,
+		Mempool* pool);
+void renderbuffer_update(RenderBuffer* buffer);
+void animation_update(Animation* anim);
+void animation_play(Animation* anim);
+void animation_pause(Animation* anim);
 
-void update_animation(Animation* anim);
-void play_animation(Animation* anim);
-void pause_animation(Animation* anim);
 
+/***********************************/
 #endif

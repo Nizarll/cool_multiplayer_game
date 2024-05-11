@@ -1,29 +1,26 @@
 #include "../libs/nanim.h"
-#include <math.h>
-#include <raylib.h>
 
 /*******************|| EASING FUNCTIONS ||*******************/
-
 static float linear(float t) {return t;}
 static float ease_inout_back(float x) {
 	constexpr auto c1 = 1.70158f;
 	constexpr auto c2 = c1 * 1.525f;
 	return x < .5f
-				? (powf(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2.0f
-				: (powf(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2.0f;
+		? (powf(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2.0f
+		: (powf(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2.0f;
 }
 static float ease_inout_cubic(float x) {
 	return x < 0.5f ? 4.0f * x * x * x : 1 - powf(-2 * x + 2, 3) / 2.0f;
 }
 static float ease_inout_circ(float x) {
-return x < 0.5f
-  ? (1.0f - sqrtf(1 - powf(2 * x, 2))) / 2.0f
-  : (sqrtf(1.0f - powf(-2 * x + 2, 2.0f)) + 1.0f) / 2.0f;
+	return x < 0.5f
+		? (1.0f - sqrtf(1 - powf(2 * x, 2))) / 2.0f
+		: (sqrtf(1.0f - powf(-2 * x + 2, 2.0f)) + 1.0f) / 2.0f;
 }
 static float ease_inout_exp(float x) {
 	return x == .0f ? .0f : x == 1.0f ? 1.0f
-  : x < 0.5f ? powf(2, 20 * x - 10) / 2.0f
-  : (2 - powf(2, -20 * x + 10)) / 2.0f;
+		: x < 0.5f ? powf(2, 20 * x - 10) / 2.0f
+		: (2 - powf(2, -20 * x + 10)) / 2.0f;
 }
 static float lerp(float from, float to, float t) {
 	return (from + (to - from) * t);
@@ -40,11 +37,41 @@ static float (*easing_functions[])(float) = {
 Vector2 vector2_lerp(Vector2 from, Vector2 to, float t, EasingStyle style) {
 	return (Vector2) {
 		.x = lerp(from.x, to.x,(easing_functions[style])(t)), 
-		.y = lerp(from.y, to.y, (easing_functions[style])(t)), 
+			.y = lerp(from.y, to.y, (easing_functions[style])(t)), 
 	};
 }
 
-void update_animation(Animation* anim) {
+Animation* animation_create(EasingStyle style,
+		bool looped,
+		Keyframe* keyframes,
+		size_t kf_count,
+		Mempool* pool) {
+	Animation* anim;
+	if (pool) {
+		anim = mempool_alloc(pool, sizeof(Animation));
+	} else {
+		anim = malloc(pool, sizeof(Animation));
+	}
+	if (!anim) {
+		printf("error! : could not create animation object");
+		exit(EXIT_FAILURE);
+	}
+	
+	anim->keyframes = keyframes;
+	anim->kf_count = kf_count;
+	anim->style = style;
+	anim->index = 0;
+	anim->duration = .0f;
+	anim->_internal = true;
+	anim->current = {};
+	anim->looped = looped;
+	ani->paused = false;
+
+	return anim;
+}
+
+void animation_update(Animation* anim) {
+	ASSERT(anim->_internal, "animation must be created through constructor");
 	if (anim->paused) return;
 	if (anim->index >= anim->kf_count && anim->looped) {
 		anim->index = 0;
@@ -54,9 +81,9 @@ void update_animation(Animation* anim) {
 	auto dt = GetFrameTime();
 	anim->duration += GetFrameTime();
 	anim->current = vector2_lerp(keyframe->from,
-															keyframe->to,
-															anim->duration/keyframe->duration,
-															eINOUT_CUBIC);
+			keyframe->to,
+			anim->duration/keyframe->duration,
+			eINOUT_CUBIC);
 	while (anim->index < anim->kf_count && anim->duration >= anim->keyframes[anim->index].duration) {
 		anim->index += 1;
 		anim->duration -= keyframe->duration;
@@ -64,9 +91,9 @@ void update_animation(Animation* anim) {
 	}
 }
 
-void play_animation(Animation* anim) {
+void animation_play(Animation* anim) {
 	anim->paused = false;
 }
-void pause_animation(Animation* anim) {
+void animation_pause(Animation* anim) {
 	anim->paused = true;
 }
