@@ -1,26 +1,38 @@
-C_STANDARD := --std=c2x
-RAYLIB_PATH := "C://raylib//raylib//src"
-CC := gcc
-CFLAGS :=  -I$(RAYLIB_PATH) $(C_STANDARD)
-LDFLAGS := -L$(RAYLIB_PATH)
-LIBS := -lraylib -lopengl32 -lgdi32 -lwinmm
-SRC := $(wildcard src/*.c) main.c
-OBJ := $(SRC:.c=.o)
-# Output binary
-TARGET := my_game
+# Makefile for your raylib project
 
-.PHONY: clean
+# Compiler settings
+CC := gcc
+C_STANDARD := --std=c2x
+CFLAGS := -Wall -I"C://raylib//raylib//src" $(C_STANDARD)
+LDFLAGS := -L"C://raylib//raylib//src"
+LIBS := -lraylib -lopengl32 -lgdi32 -lwinmm
+
+# Source and object directories
+SRC_DIR := src
+OBJ_DIR := obj
+
+# List all source files
+SRC_FILES := $(wildcard $(SRC_DIR)/*.c)
+
+# Generate corresponding object file names
+OBJ_FILES := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC_FILES))
+
+# Target executable
+TARGET := output
+
+.PHONY: all clean
 
 all: $(TARGET)
 
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -f $(OBJ_FILES) $(TARGET)
 
-$(TARGET): $(OBJ)
+$(TARGET): $(OBJ_FILES)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(LIBS)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
 
-.INTERMEDIATE: $(OBJ)

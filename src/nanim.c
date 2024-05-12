@@ -32,6 +32,7 @@ static float (*easing_functions[])(float) = {
 	[eLINEAR] = &linear,
 	[eINOUT_BACK] = &ease_inout_back,
 	[eINOUT_CUBIC] = &ease_inout_cubic,
+	[eINOUT_EXP] = &ease_inout_exp,
 };
 
 Vector2 vector2_lerp(Vector2 from, Vector2 to, float t, EasingStyle style) {
@@ -47,6 +48,10 @@ Animation* animation_create(EasingStyle style,
 		size_t kf_count,
 		Mempool* pool) {
 	Animation* anim;
+	if (style >= EASE_ENUM_LEN) {
+		printf("error! : easing function is not a valid easing function !");
+		exit(EXIT_FAILURE);
+	}
 	if (pool) {
 		anim = mempool_alloc(pool, sizeof(Animation));
 	} else {
@@ -82,14 +87,15 @@ void animation_update(Animation* anim) {
 	}
 	auto keyframe = &anim->keyframes[anim->index];
 	auto dt = GetFrameTime();
-	anim->duration += GetFrameTime();
+	anim->duration += dt;
 	anim->current = vector2_lerp(keyframe->from,
 			keyframe->to,
-			anim->duration/keyframe->duration,
-			eINOUT_CUBIC);
-	while (anim->index < anim->kf_count && anim->duration >= anim->keyframes[anim->index].duration) {
+			anim->duration /
+				(keyframe->duration / 100.0f),
+			eLINEAR);
+	while (anim->index < anim->kf_count && anim->duration * 100.0f >=anim->keyframes[anim->index].duration) {
 		anim->index += 1;
-		anim->duration -= keyframe->duration;
+		anim->duration -= keyframe->duration / 100.0f;
 		keyframe = &anim->keyframes[anim->index];
 	}
 }

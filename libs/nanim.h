@@ -28,7 +28,7 @@ constexpr char error[] = "[x] ERROR ! :";
 	}																		 \
 }while(0)
 
-typedef enum : int8_t {
+typedef enum {
 	eLINEAR = 0,
 	eINOUT_CIRC,
 	eINOUT_CUBIC,
