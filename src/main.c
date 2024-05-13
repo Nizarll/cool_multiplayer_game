@@ -4,17 +4,16 @@
 
 constexpr auto height = 400;
 constexpr auto width = 400;
-constexpr auto size = 30;
 
-const auto screenHeight = height;
-const auto screenWidth = width;
+constexpr auto screenHeight = height;
+constexpr auto screenWidth = width;
 
 static auto runSheet = &(SpriteAnimation) {
 	.path = "resources\\run.png",
-		.size = (Vector2){.x = 16.0f, .y = 16.0f},
-		.offset = (Vector2){.x = 64.0f, .y = 64.0f},
-		.position = (Vector2){},
-		.counter = 0, .length = 8,
+	.size = (Vector2){.x = 16.0f, .y = 16.0f},
+	.offset = (Vector2){.x = 64.0f, .y = 64.0f},
+	.position = (Vector2){},
+	.counter = 0, .length = 8,
 };
 
 
@@ -23,7 +22,7 @@ int main() {
 	InitWindow(width, height, "hello world");
 	SetTargetFPS(144);
 	auto pool = mempool_create(1024);
-	auto animation = animation_create(eINOUT_BACK,
+	auto animation = animation_create(eINOUT_CUBIC,
 			true,
 			NULL,
 			0,
@@ -34,15 +33,15 @@ int main() {
 	while(!WindowShouldClose()) {
 		Keyframe walk_anim[] = {
 			(Keyframe) {
-					.from = (Vector2) {.x = 200.0f, .y = 200.0f},
-					.to = (Vector2) {.x = 200.0f, .y = 250.0f},
-					.duration = 20
+					.from = (Vector2) {.x = 200.0f, .y = 140.0f},
+					.to = (Vector2) {.x = 200.0f, .y = 220.0f},
+					.duration = 15
 			},
-				(Keyframe) {
-					.from = (Vector2) {.x = 200.0f, .y = 250.0f},
-					.to = (Vector2) {.x = 200.0f, .y = 200.0f},
-					.duration = 20
-				}
+			(Keyframe) {
+					.from = (Vector2) {.x = 200.0f, .y = 220.0f},
+					.to = (Vector2) {.x = 200.0f, .y = 140.0f},
+					.duration = 15
+			}
 		};
 		animation->looped = true;
 		animation->keyframes = walk_anim;
@@ -68,8 +67,8 @@ int main() {
 			DrawTexturePro(runSheet->sheet,
 					(Rectangle){(float)frame_x,
 					(float)frame_y, 16.0f, 16.0f },
-					(Rectangle) { screenWidth / 2.0f, screenHeight / 2.0f, 200.0f, animation->current.y },
-					(Vector2){animation->current.x / 2, animation->current.y / 2},
+					(Rectangle) { screenWidth / 2.0f, screenHeight, 100.0f, animation->current.y / 2 },
+					(Vector2){animation->current.x / 4, animation->current.y / 2},
 					0.0f,
 					WHITE);
 

@@ -32,13 +32,14 @@ static float (*easing_functions[])(float) = {
 	[eLINEAR] = &linear,
 	[eINOUT_BACK] = &ease_inout_back,
 	[eINOUT_CUBIC] = &ease_inout_cubic,
+	[eINOUT_CIRC] = &ease_inout_circ,
 	[eINOUT_EXP] = &ease_inout_exp,
 };
 
 Vector2 vector2_lerp(Vector2 from, Vector2 to, float t, EasingStyle style) {
 	return (Vector2) {
 		.x = lerp(from.x, to.x,(easing_functions[style])(t)), 
-			.y = lerp(from.y, to.y, (easing_functions[style])(t)), 
+		.y = lerp(from.y, to.y, (easing_functions[style])(t)), 
 	};
 }
 
@@ -92,7 +93,7 @@ void animation_update(Animation* anim) {
 			keyframe->to,
 			anim->duration /
 				(keyframe->duration / 100.0f),
-			eLINEAR);
+			anim->style);
 	while (anim->index < anim->kf_count && anim->duration * 100.0f >=anim->keyframes[anim->index].duration) {
 		anim->index += 1;
 		anim->duration -= keyframe->duration / 100.0f;

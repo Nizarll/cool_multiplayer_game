@@ -10,6 +10,12 @@
 #endif
 
 typedef struct {
+	void* data;
+	size_t length;
+	size_t capacity;
+} Buffer;
+
+typedef struct {
 	const char* path;
 	Texture2D sheet;
 	Vector2 offset; // offset the sprite is surounded by
@@ -23,8 +29,11 @@ typedef struct {
 	Animation *anims;
 	SpriteAnimation *spr_anims;
 	Vector2 position;
-} Player;
+} entity;
 
+Buffer* buffer_create(void* items,
+		size_t size,
+		size_t capacity);
 Player* player_create(Vector2 pos,
 		Animation* anims,
 		SpriteAnimation* spr_anims,
