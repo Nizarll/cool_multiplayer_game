@@ -1,6 +1,8 @@
 #ifndef NNETWORK_H
 #define NNETWORK_H
 
+#include "utils.h"
+#include <raylib.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -8,18 +10,22 @@
 #define UNIMPLEMENTED
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+#define WIN32_LEAN_AND_MEAN
+#define OS_PLATFORM_WINDOWS
+#include <windows.h>
 #include <winsock2.h>
 #else
+#define OS_PLATFORM_UNIX 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <errno.h> defined(__APPLE__)
+#include <errno.h>
 #endif
 
-typedef enum : char {
+typedef enum {
 	WALK = 0,
 	IDLE,
 	RUN,
@@ -36,11 +42,21 @@ typedef enum {
 	JOIN,
 	LEAVE,
 	STATE_CHANGED,
-	VFX, // packet sent to tell that there's vfx to be summoned
+	VFX,
 	PACKET_LEN
 } PacketKind;
 
 UNIMPLEMENTED typedef struct {
+#if defined(OS_PLATFORM_UNIX)
+	struct sockaddr_in addr;
+	size_t port;
+	size_t socket;
+#else
+	WSADATA data;
+	SOCKET socket;
+	SOCKADDR_IN addr;
+	size_t port;
+#endif
 } Server;
 
 typedef struct {
@@ -50,14 +66,33 @@ typedef struct {
 } PacketBuffer;
 
 typedef struct {
-	const char const * payload; // read only
+	uint32_t player_id;
+	uint32_t state_id;
+	Vector2 position;
+} StatePacketData;
+typedef struct {
+	union {
+		StatePacketData data;
+		Vector2 position;
+		Vector2 size;
+		uin32_t input_key;
+	} payload;
 	uint32_t size;
-	uint32_t type;
-} Packet; // no need for pointer small enough to be copiable
+	uint32_t kind;
+} Packet;
 
-void encode(Packet* p);
-void decode(Packet* p);
-const char const * packet_serialize(Packet* p);
-Packet* packet_serialize(Packet* p);
+typedef struct {
+	void* data;
+	size_t length;
+	size_t kind;
+} State;
+
+static void encode(Packet* p);
+static void decode(Packet* p);
+static void packet_serialize(Packet* p, int8_t* arr);
+static Packet* packet_deserialize(Packet* p);
+
+Packet* receive_packet(Server* server);
+void server_init(Server* server);
 
 #endif
