@@ -5,7 +5,7 @@ CC := gcc
 C_STANDARD := --std=c2x
 CFLAGS := -Wall -I"C://raylib//raylib//src" $(C_STANDARD)
 LDFLAGS := -L"C://raylib//raylib//src"
-LIBS := -lraylib -lopengl32 -lgdi32 -lwinmm
+LIBS := -lraylib -lopengl32 -lgdi32 -lwinmm -lws2_32
 
 # Source and object directories
 SRC_DIR := src

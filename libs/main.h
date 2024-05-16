@@ -1,3 +1,6 @@
+#include "nserv_info.h"
+#include <stdint.h>
+#include "nnetwork.h"
 #include "nrender.h"
 #include "nanim.h"
 #include "utils.h"

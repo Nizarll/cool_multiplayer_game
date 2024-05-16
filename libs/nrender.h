@@ -29,7 +29,7 @@ typedef struct {
 	Animation *anims;
 	SpriteAnimation *spr_anims;
 	Vector2 position;
-} entity;
+} Player;
 
 Buffer* buffer_create(void* items,
 		size_t size,
