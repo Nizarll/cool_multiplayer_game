@@ -4,6 +4,7 @@
 
 constexpr auto height = 400;
 constexpr auto width = 400;
+constexpr auto DEFAULT_PACKET_SIZE = 1024;
 
 void window_init() {
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -19,12 +20,14 @@ int main() {
 	};
 	server_init(&server);
 	window_init();
+	char buffer[DEFAULT_PACKET_SIZE] = {0};
 	while(!WindowShouldClose()) {
+		handle_input(&server, buffer, DEFAULT_PACKET_SIZE);
 		BeginDrawing();
 		ClearBackground((Color){0x88, 0x88, 0x88, 0xff});
 		EndDrawing();
 	}
 	mempool_destroy(pool);
 	CloseWindow();
-	return 0;
+	return EXIT_SUCCESS;
 }

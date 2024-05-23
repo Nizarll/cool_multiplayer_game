@@ -41,8 +41,8 @@
 #define KEY_ATTCK2 0x04
 #define KEY_SP1    0x05
 #define KEY_SP2    0x06
-#define KEY_MB1		 0x07
-#define KEY_MB2		 0x08
+#define KEY_MB1	   0x07
+#define KEY_MB2	   0x08
 #define KEY_JMP    0x09
 
 typedef enum {
@@ -61,10 +61,10 @@ typedef enum {
 	ALLOW_CON = 0x01,
 	DEMAND_CON = 0x02,
 	DEMAND_DISCON = 0x03,
-	INPUT = 0x04,
+	INPUT_PRS = 0x04,
 	JOIN = 0x05,
 	LEAVE = 0x06,
-	MOVE = 0x07
+	MOVE = 0x07,
 	STATE_CHANGE = 0x08,
 	VFX = 0x09,
 	PACKET_LEN = 0x0A,
@@ -113,11 +113,10 @@ typedef struct {
 	size_t kind;
 } State;
 
-static void encode(Packet* p);
-static void decode(Packet* p);
+static Packet packet_deserialize(int8_t* buffer, size_t size);
 static void packet_serialize(Packet* packet, int8_t* arr, size_t size);
-static Packet packet_deserialize(uint8_t* buffer, size_t size);
+static void send_packet(Server* server, Packet p, int8_t* buff, size_t size);
 static void demand_con(Server* server);
-//Packet* receive_packet(Server* server);
+void handle_input(Server *server, int8_t* buff, size_t size);
 void server_init(Server* server);
 #endif
