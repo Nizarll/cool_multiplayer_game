@@ -1,17 +1,15 @@
 #include "../libs/nnetwork.h"
 
-static void serialize_u16(uint16_t var) {
-
+static void handle_input()
+{
+	
 }
 
-static void serialize_u32(uint16_t var) {
-
-}
 static void packet_serialize(Packet* p, int8_t* buff, size_t size)
 {
+	*buff = p->kind;
 	switch(p->kind) {
-		case DEMAND_CON:
-			*buff = DEMAND_CON;
+		case INPUT:
 			break;
 		default:
 			printf("unimplemented");
@@ -22,7 +20,7 @@ static void packet_serialize(Packet* p, int8_t* buff, size_t size)
 static Packet packet_deserialize(uint8_t* buff, size_t size)
 {
 	auto p = (Packet) {
-		.kind = *buff
+		.kind =*buff,
 	};
 	return p;
 }
@@ -55,24 +53,26 @@ void server_init(Server* server) {
 }
 
 void demand_con(Server* server) {
-	char buff[32] = {0};
-	Packet p = {
-		.kind = 2,
-		.size = ARR_LEN(buff),
-	};
-	
-	packet_serialize(&p, buff, ARR_LEN(buff));
-	while (p.kind != ALLOW_CON ) {
-		char* bytes = sendto(server->socket,
+	constexpr int buff_size = 1024;
+	char buff[buff_size] = {0};
+	auto p = (Packet) {.kind = DEMAND_CON};
+	serialize_packet(&p, buff, buff_size);
+	while (buff[0] != ALLOW_CON) {
+		sendto(server->socket,
 						buff,
-						ARR_LEN(buff),
+						buff_size,
 						0,
 						(sockaddr *) &server->addr,
 						sizeof(server->addr)
 					);
-		printf("sent: %c\n", *buff + '0');
-		recv(server->socket, buff, ARR_LEN(buff), 0);
-		p = packet_deserialize(buff, ARR_LEN(buff));
-		printf("\n packet type is %d", p.kind);
+		int i = recvfrom(server->socket,
+				buff,
+				buff_size,
+				0,
+				(struct sockaddr *) NULL,
+				NULL);
+		printf("\n\n");
+		p = packet_deserialize(buff, buff_size);
+		printf("ALLOWCON: %d packet: %d", ALLOW_CON, p.kind);
 	}
 }

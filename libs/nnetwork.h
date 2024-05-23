@@ -22,7 +22,6 @@
 #else
 #define OS_PLATFORM_UNIX
 #define sockaddr struct sockaddr
-#define recv(...) recvfrom(__VA_ARGS__)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -36,6 +35,16 @@
 #define ARR_LEN(t) (sizeof(t) / sizeof(*t))
 #endif
 
+#define KEY_R      0x01
+#define KEY_L      0x02
+#define KEY_ATTCK1 0x03
+#define KEY_ATTCK2 0x04
+#define KEY_SP1    0x05
+#define KEY_SP2    0x06
+#define KEY_MB1		 0x07
+#define KEY_MB2		 0x08
+#define KEY_JMP    0x09
+
 typedef enum {
 	WALK = 0,
 	IDLE,
@@ -48,15 +57,17 @@ typedef enum {
 } StateKind;
 
 typedef enum {
-	DISALLOW = 0,
-	ALLOW_CON,
-	DEMAND_CON,
-	DEMAND_DISCON,
-	JOIN,
-	LEAVE,
-	STATE_CHANGED,
-	VFX,
-	PACKET_LEN
+	DISALLOW = 0x00,
+	ALLOW_CON = 0x01,
+	DEMAND_CON = 0x02,
+	DEMAND_DISCON = 0x03,
+	INPUT = 0x04,
+	JOIN = 0x05,
+	LEAVE = 0x06,
+	MOVE = 0x07
+	STATE_CHANGE = 0x08,
+	VFX = 0x09,
+	PACKET_LEN = 0x0A,
 } PacketKind;
 
 UNIMPLEMENTED typedef struct {
@@ -87,10 +98,10 @@ typedef struct {
 
 typedef struct {
 	union {
-		StatePacketData data;
+		uint8_t input_key;
 		Vector2 position;
 		Vector2 size;
-		uint32_t input_key;
+		StatePacketData data;
 	} payload;
 	uint32_t size;
 	uint32_t kind;
@@ -106,7 +117,7 @@ static void encode(Packet* p);
 static void decode(Packet* p);
 static void packet_serialize(Packet* packet, int8_t* arr, size_t size);
 static Packet packet_deserialize(uint8_t* buffer, size_t size);
-
+static void demand_con(Server* server);
 //Packet* receive_packet(Server* server);
 void server_init(Server* server);
 #endif

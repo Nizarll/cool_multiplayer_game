@@ -14,8 +14,8 @@ void window_init() {
 int main() {
 	auto pool = mempool_create(1024);
 	auto server = (Server) {
-		.port = SERVER_PORT,
-		.ip = SERVER_IP,
+		.port = 2356,
+		.ip = "31.207.36.91",
 	};
 	server_init(&server);
 	window_init();

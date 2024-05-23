@@ -1,2 +1,2 @@
-#define SERVER_IP "localhost"
-#define SERVER_PORT 8080
+#define SERVER_IP "31.207.36.91"
+#define SERVER_PORT 2356
