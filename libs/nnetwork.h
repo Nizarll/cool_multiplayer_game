@@ -113,6 +113,11 @@ typedef struct {
 	size_t kind;
 } State;
 
+typedef struct {
+	Vector2 pos;
+	size_t id;
+} Player;
+
 static Packet packet_deserialize(int8_t* buffer, size_t size);
 static void packet_serialize(Packet* packet, int8_t* arr, size_t size);
 static void send_packet(Server* server, Packet p, int8_t* buff, size_t size);
