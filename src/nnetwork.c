@@ -1,4 +1,5 @@
 #include "../libs/nnetwork.h"
+#include "../libs/nrender.h"
 
 #define u32_first_half   0x0000ffff
 #define u32_second_half  0xffff0000
@@ -43,16 +44,14 @@ static void serialize_u32(uint32_t var, int8_t* buff, size_t size) {
 	serialize_u16((uint16_t)((var & u32_second_half) >> 16), buff + 2, size - 2);
 }
 
-void packet_serialize(Packet* p, int8_t* arr, size_t size)
+void packet_serialize(Packet p, int8_t* arr, size_t size)
 {
-	*arr = p->kind;
-	switch(p->kind) {
-		case INPUT_PRS:
-		  *(arr + 1) = p->payload.input_key;
-		  break;
-		default:
-		  printf("unimplemented");
-		  break;
+	*arr = p.kind;
+	if (p.kind == DEMAND_CON) {
+		return;
+	}
+	if (p.kind == INPUT_PRS) {
+		*(arr + 1) == p.payload.input_key;
 	}
 }
 
@@ -61,7 +60,10 @@ Packet packet_deserialize(int8_t* buffer, size_t size)
 	Packet p = (Packet) {
 		.kind =*buffer,
 	};
-
+	if (p.kind == ALLOW_CON) {
+		printf("allow con omfg\n");
+		return p;
+	}
 	if (p.kind == MOVE) {
 		int8_t* curr = buffer;
 		uint16_t x = deserialize_u16(buffer = buffer + 1, size - 1);
@@ -73,18 +75,6 @@ Packet packet_deserialize(int8_t* buffer, size_t size)
 	}
 
 	return p;
-}
-
-void send_packet(Server* server, Packet p, int8_t* buff, size_t buff_size)
-{
-  printf("sending packet : %d\n", p.kind);
-  packet_serialize(&p, buff, buff_size);
-  sendto(server->socket,
-    buff,
-    buff_size,
-    0,
-    (sockaddr *) &server->addr,
-    sizeof(server->addr));
 }
 
 
@@ -115,36 +105,22 @@ void server_init(Server* server) {
 	demand_con(server);
 }
 
-Packet receive_packet(Server* server, const char* buff, size_t size, struct sockaddr_in* sockaddr) {
-  socklen_t sock_size = sizeof(struct sockaddr_in);
-  if (recvfrom(server->socket, buff, size, 0, NULL, NULL) < 0)
-		printf("could not receive packet from server!\n");
-  for (int i = 0; i < size; i++)
-    return (Packet)packet_deserialize(buff, size);// deserialize a packet here
+Packet receive_packet(Server* server, int8_t* buff, size_t size, struct sockaddr_in* addr) {
+  int sock_size = sizeof(struct sockaddr_in);
+	if(recvfrom(server->socket, buff, size, 0, addr, &sock_size) < 0) return (Packet){.kind = NONE};
+  return (Packet)packet_deserialize(buff, size);
 }
 
-void send_packet(Server* server, Packet p, char* buff, size_t buff_size, struct sockaddr_in* addr) {
-  socklen_t sock_size = sizeof(struct sockaddr_in);
+void send_packet(Server* server, Packet p, int8_t* buff, size_t buff_size) {
+  int sock_size = sizeof(struct sockaddr_in);
   packet_serialize(p, buff, buff_size);
   if (sendto(server->socket, buff, buff_size, 0,
-        (struct sockaddr*) addr, sock_size) < 0)
+        &server->addr, sock_size) < 0)
     			printf("could not send packet to server\n");
 }
 
-void packet_serialize(Packet p, int8_t* buff, size_t size) {
-  *buff = p.kind;
-  if  (p.kind == ALLOW_CON) {
-    printf("packet to serialize is of type allow con\n");
-    //serialize_u16(p.payload.id, buff, size);
-    return;
-  }
-  if (p.kind == JOIN) {
-    // ha
-    return;
-  }
-}
 
-void handle_input(Server *server, int8_t* buff, size_t size)
+void handle_input(Server *server, int8_t* buff, size_t size, struct sockaddr_in* addr)
 {
   if(IsKeyDown(KEY_D) && curr_key != KEY_L) {
     send_packet(server,
@@ -172,23 +148,20 @@ void demand_con(Server* server) {
 	constexpr int buff_size = 1024;
 	char buff[buff_size] = {0};
 	auto p = (Packet) {.kind = DEMAND_CON};
-	packet_serialize(&p, buff, buff_size);
-	while (buff[0] != ALLOW_CON) {
+	packet_serialize(p, buff, buff_size);
+	while (p.kind != ALLOW_CON) {
 		sendto(server->socket,
-			 buff,
-			 buff_size,
-			 0,
-			 (sockaddr *) &server->addr,
-			 sizeof(server->addr)
-			 );
+			 buff, buff_size, 0, &server->addr, sizeof(server->addr));
 		int i = recvfrom(server->socket,
-			  buff,
-			  buff_size,
-			  0,
-			  (struct sockaddr *) NULL,
-			  NULL);
+			  buff, buff_size, 0, NULL, NULL);
 		printf("\n\n");
 		p = packet_deserialize(buff, buff_size);
 		printf("ALLOWCON: %d packet: %d", ALLOW_CON, p.kind);
 	}
+#if defined(OS_PLATFORM_UNIX)
+	fcntl(server->socket, F_SETFL, O_NONBLOCK); 
+#else
+	unsigned long non_blocking = 1;
+	ioctlsocket(server->socket, FIONBIO, &non_blocking);
+#endif
 }

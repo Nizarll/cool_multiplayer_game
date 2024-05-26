@@ -11,7 +11,6 @@
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 #define WIN32_LEAN_AND_MEAN
 #define OS_PLATFORM_WINDOWS
-#define sockaddr SOCKADDR
 #define Rectangle boohoo_windows
 #define CloseWindow win32_t_sucks 
 #define ShowCursor win32_t_sucks2 
@@ -21,7 +20,6 @@
 #undef ShowCursor
 #else
 #define OS_PLATFORM_UNIX
-#define sockaddr struct sockaddr
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -67,7 +65,8 @@ typedef enum {
 	MOVE = 0x07,
 	STATE_CHANGE = 0x08,
 	VFX = 0x09,
-	PACKET_LEN = 0x0A,
+	NONE = 0xA,
+	PACKET_LEN = 0x0B,
 } PacketKind;
 
 UNIMPLEMENTED typedef struct {
@@ -82,6 +81,7 @@ UNIMPLEMENTED typedef struct {
 	SOCKADDR_IN addr;
 	size_t port;
 #endif
+	fd_set set;
 } Server;
 
 typedef struct {
@@ -113,15 +113,12 @@ typedef struct {
 	size_t kind;
 } State;
 
-typedef struct {
-	Vector2 pos;
-	size_t id;
-} Player;
-
 static Packet packet_deserialize(int8_t* buffer, size_t size);
-static void packet_serialize(Packet* packet, int8_t* arr, size_t size);
+static void packet_serialize(Packet packet, int8_t* arr, size_t size);
 static void send_packet(Server* server, Packet p, int8_t* buff, size_t size);
 static void demand_con(Server* server);
-void handle_input(Server *server, int8_t* buff, size_t size);
+Packet receive_packet(Server* server, int8_t* buff, size_t size, struct sockaddr_in* addr);
+void send_packet(Server* server, Packet p, int8_t* buff, size_t size);
+void handle_input(Server *server, int8_t* buff, size_t size,  struct sockaddr_in* addr);
 void server_init(Server* server);
 #endif

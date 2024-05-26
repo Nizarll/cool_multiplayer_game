@@ -26,9 +26,10 @@ typedef struct {
 }SpriteAnimation;
 
 typedef struct {
+	Vector2 pos;
+	size_t id;
 	Animation *anims;
 	SpriteAnimation *spr_anims;
-	Vector2 position;
 } Player;
 
 Buffer* buffer_create(void* items,
